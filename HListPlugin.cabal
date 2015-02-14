@@ -1,0 +1,23 @@
+name:                HListPlugin
+version:             0.1.0.0
+synopsis:            type checker plugin for use with ghc-7.10
+-- description:         
+license:             MIT
+license-file:        LICENSE
+author:              Adam Vogt
+maintainer:          <vogt.adam@gmail.com>
+-- copyright:           
+-- category:            
+build-type:          Simple
+-- extra-source-files:  
+cabal-version:       >=1.10
+
+library
+  exposed-modules:     HListPlugin
+  -- other-modules:       
+  -- other-extensions:    
+  build-depends:       base >=4.8 && <4.9,
+                       containers,
+                       ghc
+  -- hs-source-dirs:      
+  default-language:    Haskell2010
