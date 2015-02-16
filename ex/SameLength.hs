@@ -9,3 +9,6 @@ import HList
 main = return ()
 
 p = Proxy :: HLength (x :: [*]) ~ HLength (y :: [*]) => Proxy '(y, x)
+
+
+q = p `asTypeOf` (Proxy :: Proxy '( [(),()], (t :: [*])))
