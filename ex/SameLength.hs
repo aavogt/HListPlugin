@@ -11,4 +11,4 @@ main = return ()
 p = Proxy :: HLength (x :: [*]) ~ HLength (y :: [*]) => Proxy '(y, x)
 
 
-q = p `asTypeOf` (Proxy :: Proxy '( [(),()], (t :: [*])))
+q = p `asTypeOf` (Proxy :: Proxy '( [a,b], (t :: [*])))

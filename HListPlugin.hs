@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 module HListPlugin (plugin) where
 
 import GhcPlugins
@@ -17,64 +18,50 @@ plugin = defaultPlugin { tcPlugin =
 
 data S = S {
        isHLength :: TyCon -> Bool,
-       seen :: IORef (M.Map TcTyVar [[Xi]]),
-       sameLength :: TyCon }
+       sameLength, hNat :: TyCon }
 
 ini = do
   Found _loc hlist <- findImportedModule (mkModuleName "HList") Nothing
+  let hlistTC :: String -> TcPluginM TyCon
+      hlistTC str = tcLookupTyCon =<< lookupOrig hlist (mkTcOcc str)
 
-
-  hlength <- tcLookupTyCon =<< lookupOrig hlist (mkTcOcc "HLength")
-  sameLengthName <- lookupOrig hlist (mkTcOcc "SameLength")
-  sameLengthTC <- tcLookupTyCon sameLengthName
+  hlength <- hlistTC "HLength"
+  sameLength <- hlistTC "SameLength"
+  hNat <- hlistTC "HNat"
 
   seenRef <- tcPluginIO (newIORef M.empty)
   return S { isHLength = (==) hlength,
-             seen = seenRef,
-             sameLength = sameLengthTC }
+             sameLength = sameLength,
+             hNat = hNat }
 
 stop _ = return ()
 
+sol state _given _derived wanteds = return $ uncurry TcPluginOk $ unzip $
+  let isHNat :: Type -> Bool
+      isHNat x = TyConApp (hNat state) [] == x
 
+      unHLength :: Type -> Maybe (Kind, Type)
+      unHLength (TyConApp con [k, x]) | isHLength state con = Just (k,x)
+      unHLength _ = Nothing
 
--- 1. pretend that HList is representational
---
--- 2. Given (HLength x ~ fsk1, HLength y ~ fsk2, fsk1 ~ fsk2) add the
---    constraint (SameLength x y)
-sol state given derived wanted = do
+      sl :: (Kind,Type) -> (Kind, Type) -> Type
+      sl (kl,l) (kr, r) = TyConApp (sameLength state) [kl, kr, l, r]
 
-    seenMap <- tcPluginIO (readIORef (seen state))
-    ev <- newFlexiTyVar anyKind
-    (_, env) <- getEnvs
+  in [ ((EvId var, want),
+       -- discharge the original constraint (possibly don't do this
+       -- with a more general version of this plugin, since we might
+       -- add constraints that are weaker but still help
+       -- (for example SameLength' x y)
 
-    let state' :: M.Map TcTyVar [[Xi]]
-        state' = M.fromListWith (++) [ (fsk, [xis])
-                | CFunEqCan { cc_fun = f, cc_tyargs = xis, cc_fsk = fsk } <- given,
-                  isHLength state f  ]
-                    M.\\ seenMap
-        newReq = concat [ map CNonCanonical $ map (opts !!) [1] -- just Wanted
-
-                                        
-
-
-
-                    | CTyEqCan { cc_tyvar = fsk, cc_rhs = TyVarTy rhs } <- given,
-
-                    Just [[kL,xiL]] <- [M.lookup fsk state'],
-                    Just [[kR,xiR]] <- [M.lookup rhs state'],
-                    let predType = TyConApp (sameLength state) [kL,kR,xiL,xiR],
-                    let dummyLoc = CtLoc AppOrigin env initialSubGoalDepth,
-
-                    let opts = [ CtGiven
-                                  predType
-                                  (EvId ev)
-                                  dummyLoc,
-                                CtWanted predType
-                                    ev
-                                    dummyLoc,
-                                CtDerived predType dummyLoc
-                            ]
-                    ]
-    tcPluginIO (writeIORef (seen state) (state' `M.union` seenMap))
-    tcPluginTrace "XXX" (ppr newReq)
-    return (TcPluginOk [] newReq)
+       -- add the SameLength constraint
+       CNonCanonical (CtWanted (sl kll krr) var loc))
+     | want <- wanteds,
+       CNonCanonical
+          (CtWanted
+              (TyConApp ((==) eqTyCon -> True)
+                  [ isHNat -> True,
+                    unHLength -> Just kll,
+                    unHLength -> Just krr])
+              var
+              loc) <- [want]
+       ]

@@ -1,10 +1,11 @@
 # HListPlugin
 
-This does not work properly yet. But the idea is to make ghc smarter when dealing with HList.
+The idea is to use a type checker plugin (ghc>7.10) to allow ghc be smarter
+when dealing with HList.
 
 ## Replacing Constraints with other Constraints
 
-### SameLength/HLength
+### SameLength/HLength (DONE)
 The goal is that in the following session (ghci ex/HList.hs):
 
     *HList> :set +t -XDataKinds -XFlexibleContexts -XTypeFamilies -XConstraintKinds
@@ -16,7 +17,7 @@ The goal is that in the following session (ghci ex/HList.hs):
 the plugin would be able to make both types equal to `Proxy '[y, y1]`.
 ex/SameLength.hs `b` is that example in a file.
 
-### Why?
+### Why? (TODO)
 More generally, the idea is to allow ghc to reason about equality constraints between
 type families. For example we might encode that `F` is injective in the second parameter:
 
@@ -62,5 +63,5 @@ type Labelable x s t a b = (HUpdateAtR x b s ~ t, (s ! x) ~ a)
 But type information should be able to flow backwards as expressed by the functional dependencies attached to `Labelable` above.
 The use of `HUpdateAtR` above should allow ghc to use `(HUpdateAtR x a t ~ s, (t ! x) ~ b)` to figure out unknown type variables.  In other words I want to teach ghc to reason: if I got `t` by putting a `b` at label `x` in `s`, I can put an `a` at label `x` in `t` to get `s` back, and I can get a `b` by looking at label `x` in `t`.
 
-## Coercible
+## Coercible (TODO)
 See `ex/Coercible.hs`. `data family HList xs` should have role representational, but ghc doesn't look at instances to see that "I always use the same number of `HCons` for the same length of `xs`".
