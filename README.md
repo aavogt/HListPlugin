@@ -63,5 +63,7 @@ type Labelable x s t a b = (HUpdateAtR x b s ~ t, (s ! x) ~ a)
 But type information should be able to flow backwards as expressed by the functional dependencies attached to `Labelable` above.
 The use of `HUpdateAtR` above should allow ghc to use `(HUpdateAtR x a t ~ s, (t ! x) ~ b)` to figure out unknown type variables.  In other words I want to teach ghc to reason: if I got `t` by putting a `b` at label `x` in `s`, I can put an `a` at label `x` in `t` to get `s` back, and I can get a `b` by looking at label `x` in `t`.
 
-## Coercible (TODO)
-See `ex/Coercible.hs`. `data family HList xs` should have role representational, but ghc doesn't look at instances to see that "I always use the same number of `HCons` for the same length of `xs`".
+## Coercible
+`data family HList xs` should have role representational, but ghc doesn't look at instances to see that "I always use the same number of `HCons` for the same length of `xs`".
+
+Mostly working: see `ex/Coerce.hs`. Note that a ghc that has #10031 fixed is needed.

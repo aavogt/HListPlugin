@@ -1,4 +1,5 @@
-GHCI=ghci-7.10.0.20141222
+GHCI=ghci-7.10.0.20150219
+# ghci-7.10.0.20141222
 SHELL=bash
 
 main: SameLength.out Coerce.out
